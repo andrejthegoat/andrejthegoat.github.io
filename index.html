@@ -508,7 +508,7 @@
         let follows = JSON.parse(localStorage.getItem('twitter_follows') || '{}');
         let likes = JSON.parse(localStorage.getItem('twitter_likes') || '{}');
         let retweets = JSON.parse(localStorage.getItem('twitter_retweets') || '{}');
-        let messages = JSON.parse(localStorage.getItem('twitter_messages') || '[]');
+        let messages = [];
         let isSignUp = false;
 
         // DOM elements
@@ -1034,7 +1034,7 @@
             localStorage.setItem('twitter_follows', JSON.stringify(follows));
             localStorage.setItem('twitter_likes', JSON.stringify(likes));
             localStorage.setItem('twitter_retweets', JSON.stringify(retweets));
-            localStorage.setItem('twitter_messages', JSON.stringify(messages));
+            
         }
 
         function updateUI() {
