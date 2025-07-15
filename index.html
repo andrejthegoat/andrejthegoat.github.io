@@ -386,6 +386,7 @@
                 <button class="nav-tab active" data-tab="timeline">Timeline</button>
                 <button class="nav-tab" data-tab="profile">Profile</button>
                 <button class="nav-tab" data-tab="explore">Explore</button>
+                <button class="nav-tab" data-tab="chat">Chat</button>
             </div>
 
             <!-- Timeline Tab -->
@@ -438,6 +439,33 @@
                     <div id="usersList"></div>
                 </div>
             </div>
+
+            <!-- Chat Tab -->
+            <div id="chatTab" class="tab-content hidden">
+                <div id="chatContent" class="hidden">
+                    <!-- Chat Messages -->
+                    <div id="chatMessages" style="height: 400px; overflow-y: auto; border-bottom: 1px solid #333; padding: 1rem;"></div>
+                    
+                    <!-- Chat Input -->
+                    <div class="compose-section">
+                        <div class="compose-area">
+                            <div class="avatar" id="chatUserAvatar">U</div>
+                            <div class="compose-form">
+                                <textarea 
+                                    id="chatInput" 
+                                    class="tweet-input" 
+                                    placeholder="Type a message..."
+                                    style="min-height: 30px;"
+                                ></textarea>
+                                <div class="compose-actions">
+                                    <div></div>
+                                    <button id="sendMessageBtn" class="btn" disabled>Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -480,6 +508,7 @@
         let follows = JSON.parse(localStorage.getItem('twitter_follows') || '{}');
         let likes = JSON.parse(localStorage.getItem('twitter_likes') || '{}');
         let retweets = JSON.parse(localStorage.getItem('twitter_retweets') || '{}');
+        let messages = JSON.parse(localStorage.getItem('twitter_messages') || '[]');
         let isSignUp = false;
 
         // DOM elements
@@ -499,6 +528,10 @@
         const charCount = document.getElementById('charCount');
         const timelineFeed = document.getElementById('timelineFeed');
         const userAvatar = document.getElementById('userAvatar');
+        const chatInput = document.getElementById('chatInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatUserAvatar = document.getElementById('chatUserAvatar');
 
         // Initialize app
         function init() {
@@ -517,6 +550,16 @@
             // Tweet composition
             tweetInput.addEventListener('input', updateCharCount);
             tweetBtn.addEventListener('click', postTweet);
+
+            // Chat functionality
+            chatInput.addEventListener('input', updateChatInput);
+            sendMessageBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
 
             // Tab navigation
             document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -630,6 +673,7 @@
             currentUserSpan.classList.remove('hidden');
             currentUserSpan.textContent = `@${currentUser}`;
             userAvatar.textContent = users[currentUser].displayName[0].toUpperCase();
+            chatUserAvatar.textContent = users[currentUser].displayName[0].toUpperCase();
         }
 
         function hideMainContent() {
@@ -814,6 +858,8 @@
                 updateProfile();
             } else if (tabName === 'explore') {
                 updateExplore();
+            } else if (tabName === 'chat') {
+                updateChat();
             }
         }
 
@@ -910,12 +956,85 @@
             updateProfile();
         }
 
+        function updateChatInput() {
+            const hasContent = chatInput.value.trim().length > 0;
+            sendMessageBtn.disabled = !hasContent;
+        }
+
+        function sendMessage() {
+            const content = chatInput.value.trim();
+            if (!content) return;
+
+            const message = {
+                id: Date.now().toString(),
+                author: currentUser,
+                content,
+                timestamp: new Date().toISOString()
+            };
+
+            messages.unshift(message);
+            saveData();
+            chatInput.value = '';
+            updateChatInput();
+            updateChat();
+        }
+
+        function updateChat() {
+            const chatContent = document.getElementById('chatContent');
+            if (!currentUser) {
+                chatContent.classList.add('hidden');
+                return;
+            }
+
+            chatContent.classList.remove('hidden');
+            
+            chatMessages.innerHTML = '';
+            
+            if (messages.length === 0) {
+                chatMessages.innerHTML = '<div class="empty-state">No messages yet. Start a conversation!</div>';
+                return;
+            }
+
+            // Show messages in chronological order (newest at bottom)
+            const sortedMessages = [...messages].reverse();
+            sortedMessages.forEach(message => {
+                const messageElement = createMessageElement(message);
+                chatMessages.appendChild(messageElement);
+            });
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function createMessageElement(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'tweet';
+            messageDiv.style.borderBottom = 'none';
+            messageDiv.style.marginBottom = '0.5rem';
+            
+            const user = users[message.author];
+            const isOwnMessage = message.author === currentUser;
+
+            messageDiv.innerHTML = `
+                <div class="tweet-header">
+                    <div class="avatar">${user.displayName[0].toUpperCase()}</div>
+                    <span class="username" style="color: ${isOwnMessage ? '#1d9bf0' : '#fff'}">${user.displayName}</span>
+                    <span class="handle">@${user.username}</span>
+                    <span class="timestamp">• ${formatTimestamp(message.timestamp)}</span>
+                </div>
+                <div class="tweet-content" style="margin-left: 3rem; margin-top: 0.25rem;">${message.content}</div>
+            `;
+
+            return messageDiv;
+        }
+
         function saveData() {
             localStorage.setItem('twitter_users', JSON.stringify(users));
             localStorage.setItem('twitter_tweets', JSON.stringify(tweets));
             localStorage.setItem('twitter_follows', JSON.stringify(follows));
             localStorage.setItem('twitter_likes', JSON.stringify(likes));
             localStorage.setItem('twitter_retweets', JSON.stringify(retweets));
+            localStorage.setItem('twitter_messages', JSON.stringify(messages));
         }
 
         function updateUI() {
